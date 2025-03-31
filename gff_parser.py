@@ -5,6 +5,9 @@
 ## antti.karkman@gmail.com
 ## 2020 (tested with anvi'o v6.2, and should work with anything after)
 
+## Bakta adaptation implemented by Igor Duarte (igor.oduarte2@gmail.com) in 2025.
+## Tested with Bakta v1.11.0 and Anvi'o v8.
+
 import gffutils
 import argparse
 import sys
@@ -12,16 +15,18 @@ import sys
 from collections import Counter
 
 #parse the arguments
-parser = argparse.ArgumentParser(description="""Parse Prokka annotated genome/metagenome to add external gene calls and functions to anvi'o.
-                    Input annotation in GFF3 format, outputs are tab-delimited text files, one for gene calls and one for annotations""")
-parser.add_argument('gff_file', metavar='GFF3', help='Annotation file from Prokka in GFF3 format')
+parser = argparse.ArgumentParser(description="""Parse Prokka- or Bakta-annotated genome/metagenome to add external gene calls and functions to Anvi'o.
+                    Input annotation in GFF3 format, outputs are tab-delimited text files, one for gene calls and one for annotations that can be used
+                    with the command "anvi-gen-contigs-database" from Anvi'o.""")
+parser.add_argument('gff_file', metavar='GFF3', help='Annotation file from Prokka/Bakta in GFF3 format')
 parser.add_argument('--gene-calls', default='gene_calls.txt', help='Output: External gene calls (Default: gene_calls.txt)')
 parser.add_argument('--annotation', default='gene_annot.txt', help='Output: Functional annotation for external gene calls (Default: gene_annot.txt)')
 parser.add_argument('--process-all', default=False, action="store_true", help="Prodigal returns anything it finds, including tRNAs and\
-                    other genetic structures that are not nessecarily translatable, and can cause downstream issues especially if you would like to\
-                    use your annotations in contigs databases for pangenomic analyses. As a precation this script only recovers open reading frames\
-                    identifie dby Prodigal. Using this flag, you can import everything.")
-parser.add_argument('--source', default='Prokka', help='Source of gene calls (Prokka or IMG) (Default: Prokka)')
+                    other genetic structures that are not necessarily translatable, and can cause downstream issues especially if you would like to\
+                    use your annotations in contigs databases for pangenomic analyses. As a precaution this script only recovers open reading frames\
+                    identified by Prodigal. Using this flag, you can import everything. If your source is Bakta, however, leaving this flag out\
+                    will be catastrophical.")
+parser.add_argument('--source', default='Prokka', help='Source of gene calls (Prokka, IMG or Bakta) (Default: Prokka)')
 
 args = parser.parse_args()
 
@@ -36,6 +41,8 @@ if SOURCE == 'Prokka':
     SEP = ':'
 elif SOURCE == 'IMG':
     SEP = ' '
+elif SOURCE == 'Bakta':
+    pass
 else:
     print(SOURCE, "is not an available gene caller.")
     sys.exit()
@@ -59,9 +66,16 @@ features_missing_product_or_note = 0
 
 #parse the GFF3 file and write results to output files
 for feature in db.all_features():
-    total_num_features += 1
     # determine source
-    source, version = feature.source.split(SEP, 1)
+    if SOURCE == 'Bakta':
+        if feature.source == 'Bakta':
+            continue
+        source = feature.source
+        version = '0'
+    else:
+        source, version = feature.source.split(SEP, 1)
+
+    total_num_features += 1
 
     # move on if not Prodigal, unless the user wants it badly
     if not args.process_all:
@@ -102,7 +116,7 @@ for feature in db.all_features():
     except KeyError:
         product = feature.attributes['note'][0]
 
-    # skip if hypotethical proiten:
+    # skip if hypothetical protein:
     if product == 'hypothetical protein':
         product = ""
         gene_acc = ""
@@ -121,10 +135,8 @@ for feature in db.all_features():
 
     gene_id = gene_id + 1
 
-print(f"Done. All {total_num_features} have been processed succesfully. There were {call_types['CDS']} coding "
-      f"sequences, {call_types['RNA']} RNAs, and {call_types['unknown']} unknown features.")
+print(f"Done. All {total_num_features} have been processed successfully. There were {call_types['CDS']} coding sequences, {call_types['RNA']} RNAs, and {call_types['unknown']} unknown features.")
 
 if features_missing_product_or_note:
     print()
-    print(f"Please note that we discarded {features_missing_product_or_note} features described in this file "
-          f"since they did not contain any products or notes :/")
+    print(f"Please note that we discarded {features_missing_product_or_note} features described in this file since they did not contain any products or notes :/")
