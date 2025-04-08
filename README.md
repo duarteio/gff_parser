@@ -8,10 +8,12 @@ Annotate your genome/metagenome with Prokka/Bakta or download annotations from t
 database.
 Use the script to get two files needed for external gene calls and annotations for Anvi'o.   
 With the `--source` flag you can specify where the annotations are coming from.
+Amino acid sequences can also be added to the gene calls file using the flags `--include-aa-sequences` and `--faa_file`.
+This functionality has, however, only been tested with Bakta annotation files.
 
+Basic usage:
 ```
-gff_parser.py GFF3_file --gene-calls gene_calls.txt --annotation gene_annot.txt
---source Prokka
+gff_parser.py GFF3_file --gene-calls gene_calls.txt --annotation gene_annot.txt --source Prokka
 ```
 
 This might or might not work for your files. But I hope it works for you too.
@@ -29,4 +31,9 @@ python gff_parser.py test/IMG.gff --gene-calls IMG_gene_calls.txt --annotation I
 __BAKTA__ annotations:
 ```
 python gff_parser.py test/BAKTA.gff --gene-calls BAKTA_gene_calls.txt --annotation BAKTA_annotation.txt --process-all --source Bakta
+```
+
+Additionally, these flags can be used to include amino acid sequences in the gene calls:
+```
+python gff_parser.py test/BAKTA.gff --gene-calls BAKTA_gene_calls.txt --annotation BAKTA_annotation.txt --process-all --source Bakta --include-aa-sequences --faa_file test/BAKTA.faa
 ```

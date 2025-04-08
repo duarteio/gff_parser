@@ -85,7 +85,7 @@ def get_aa_seq(fna_path):
 for feature in db.all_features():
     # determine source
     if SOURCE == 'Bakta':
-        if feature.source == 'Bakta':
+        if feature.featuretype == 'gap' or feature.featuretype == 'region':
             continue
         source = feature.source
         version = '0'
